@@ -24,6 +24,24 @@ locals {
   }
 }
 
+resource "google_compute_global_address" "private_ip_alloc" {
+  count         = "${var.ip_configuration["private_network"] ? 1 : 0}"
+  name          = "${var.name}}"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = "${var.ip_configuration["private_network"]}"
+}
+
+resource "google_service_networking_connection" "private_vpc_connection" {
+  count    = "${var.ip_configuration["private_network"] ? 1 : 0}"
+  provider = "google-beta"
+
+  network                 = "${var.ip_configuration["private_network"]}"
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = "${google_compute_global_address.private_ip_alloc.name}"
+}
+
 resource "google_sql_database_instance" "default" {
   project          = "${var.project_id}"
   name             = "${var.name}"
